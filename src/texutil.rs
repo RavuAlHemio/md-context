@@ -108,9 +108,9 @@ pub fn frag_to_tex(frag: &MarkdownFragment) -> Result<String, String> {
         match elem {
             MarkdownElement::BlockQuote(subfrag) => {
                 let subtex = frag_to_tex(subfrag)?;
-                ret.push_str("\n\\startblockquote\n");
+                ret.push_str("\\startblockquote\n");
                 ret.push_str(&subtex);
-                ret.push_str("\n\\stopblockquote\n");
+                ret.push_str("\\stopblockquote\n\n");
             },
             MarkdownElement::Code(subfrag) => {
                 // special handling for curly braces
@@ -120,9 +120,9 @@ pub fn frag_to_tex(frag: &MarkdownFragment) -> Result<String, String> {
             MarkdownElement::CodeBlock(subfrag) => {
                 let subtex = frag_to_collected_text(subfrag)?;
                 // FIXME: write to file and use \typefile instead?
-                ret.push_str("\n\\starttyping\n");
+                ret.push_str("\\starttyping\n");
                 ret.push_str(&subtex);
-                ret.push_str("\n\\stoptyping\n");
+                ret.push_str("\\stoptyping\n\n");
             },
             MarkdownElement::Formatting(fmt, subfrag) => {
                 let subtex = frag_to_tex(subfrag)?;
@@ -188,7 +188,7 @@ pub fn frag_to_tex(frag: &MarkdownFragment) -> Result<String, String> {
                     ret.push_str(&subtex);
                     ret.push_str("\n");
                 }
-                ret.push_str("\n\\stopitemize\n");
+                ret.push_str("\\stopitemize\n");
             },
             MarkdownElement::Paragraph(subfrag) => {
                 let subtex = frag_to_tex(subfrag)?;
