@@ -1,4 +1,13 @@
+use lazy_static::lazy_static;
+use regex::{Captures, Regex};
+
 use crate::md_ast::{MarkdownElement, MarkdownFormat, MarkdownFragment};
+
+
+lazy_static! {
+    static ref EDUCATED_QUOTE_RE: Regex = Regex::new("(?m)(^|.)\"").unwrap();
+}
+
 
 pub fn escape_tex(text: &str) -> String {
     let mut ret = String::with_capacity(text.len());
@@ -10,6 +19,25 @@ pub fn escape_tex(text: &str) -> String {
     }
     ret
 }
+
+
+pub fn educate_tex_quotes(text: &str) -> String {
+    let rep1res = EDUCATED_QUOTE_RE.replace_all(
+        text,
+        |caps: &Captures| {
+            let pre_char = caps.get(1).unwrap().as_str();
+            if pre_char.is_empty() || pre_char.chars().all(|c| c.is_whitespace()) {
+                // beginning of line or following whitespace => opening quote
+                format!("{}\u{201C}", pre_char)
+            } else {
+                // closing quote
+                format!("{}\u{201D}", pre_char)
+            }
+        },
+    );
+    rep1res.into_owned()
+}
+
 
 #[derive(PartialEq, Eq)]
 enum TypingState {
@@ -201,7 +229,7 @@ pub fn frag_to_tex(frag: &MarkdownFragment) -> Result<String, String> {
                 ret.push_str("\\eTABLE\n\n");
             },
             MarkdownElement::Text(text) => {
-                let text = escape_tex(&text);
+                let text = educate_tex_quotes(&escape_tex(&text));
                 ret.push_str(&text);
             },
             _ => {
