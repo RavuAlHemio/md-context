@@ -1,0 +1,10 @@
+[package]
+name = "md-context"
+version = "0.1.0"
+authors = ["Ondřej Hošek <ondra.hosek@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+getopts = { version = "0.2" }
+handlebars = { version = "3.0" }
+pulldown-cmark = { version = "0.7", default-features = false }
