@@ -234,7 +234,7 @@ pub fn load_toc(book_path: &str) -> Result<TableOfContents, TOCLoadError> {
                         },
                         _ => {
                             return Err(TOCLoadError::new(format!(
-                                "unexpected TOC paragraph item: {:?}", elem,
+                                "unexpected TOC paragraph item: {:?}", parelem,
                             )));
                         },
                     };
