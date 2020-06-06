@@ -152,6 +152,10 @@ fn links_to_toc<'a, E: IntoIterator<Item = &'a MarkdownElement>>(frag: E, sectio
                     last_entry.child_entries_mut().append(&mut sub_entries);
                 }
             },
+            MarkdownElement::Paragraph(subfrag) => {
+                let mut sub_entries = links_to_toc(subfrag.elements(), section_level)?;
+                entries.append(&mut sub_entries);
+            },
             _ => {
                 return Err(format!("unexpected TOC list item: {:?}", elem));
             },
@@ -224,6 +228,9 @@ pub fn load_toc(book_path: &str) -> Result<TableOfContents, TOCLoadError> {
                                 items.iter().flat_map(|frag| frag.elements()),
                                 0
                             )
+                        },
+                        MarkdownElement::Text(s) if s == "\n" => {
+                            Ok(vec![])
                         },
                         _ => {
                             return Err(TOCLoadError::new(format!(
