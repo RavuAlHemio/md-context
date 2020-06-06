@@ -76,7 +76,7 @@ impl PartialOrd for TOCLevel {
 pub struct TOCEntry {
     level: TOCLevel,
     title: String,
-    path: PathBuf,
+    path: Option<PathBuf>,
     child_entries: Vec<TOCEntry>,
 }
 impl TOCEntry {
@@ -84,14 +84,23 @@ impl TOCEntry {
         TOCEntry {
             level,
             title: title.as_ref().to_owned(),
-            path: path.as_ref().to_path_buf(),
+            path: Some(path.as_ref().to_path_buf()),
+            child_entries: vec![],
+        }
+    }
+
+    pub fn new_without_path<T: AsRef<str>>(level: TOCLevel, title: T) -> TOCEntry {
+        TOCEntry {
+            level,
+            title: title.as_ref().to_owned(),
+            path: None,
             child_entries: vec![],
         }
     }
 
     accessor!(level, TOCLevel);
     accessor!(title, str);
-    accessor!(path, Path);
+    accessor_opt!(path, Path);
     accessor_and_mut!(child_entries, child_entries_mut, Vec<TOCEntry>);
 }
 
@@ -169,6 +178,7 @@ pub fn load_toc(book_path: &str) -> Result<TableOfContents, TOCLoadError> {
     let mut front_matter_sections = Vec::new();
     let mut body_sections = Vec::new();
     let mut back_matter_sections = Vec::new();
+    let mut current_part: Option<TOCEntry> = None;
     for elem in toc_frag.elements() {
         match elem {
             MarkdownElement::Heading(1, frag) => {
@@ -180,6 +190,25 @@ pub fn load_toc(book_path: &str) -> Result<TableOfContents, TOCLoadError> {
                         )));
                     }
                 };
+            },
+            MarkdownElement::Heading(2, frag) => {
+                if let Some(cp) = current_part {
+                    body_sections.push(cp);
+                }
+
+                let part_title = match frag_to_tex(&frag) {
+                    Ok(t) => t,
+                    Err(err) => {
+                        return Err(TOCLoadError::new(format!(
+                            "failed to parse part title: {}", err,
+                        )));
+                    }
+                };
+
+                current_part = Some(TOCEntry::new_without_path(
+                    TOCLevel::Part,
+                    part_title,
+                ));
             },
             MarkdownElement::Paragraph(frag) => {
                 for parelem in frag.elements() {
@@ -230,7 +259,11 @@ pub fn load_toc(book_path: &str) -> Result<TableOfContents, TOCLoadError> {
                             )));
                         }
                     };
-                    body_sections.append(&mut toc_elems);
+                    if let Some(cp) = &mut current_part {
+                        cp.child_entries.append(&mut toc_elems);
+                    } else {
+                        body_sections.append(&mut toc_elems);
+                    }
                 }
             },
             _ => {
@@ -239,6 +272,10 @@ pub fn load_toc(book_path: &str) -> Result<TableOfContents, TOCLoadError> {
                 )));
             }
         }
+    }
+
+    if let Some(cp) = current_part {
+        body_sections.push(cp);
     }
 
     let mut toc = TableOfContents::new(&title);

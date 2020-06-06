@@ -8,6 +8,18 @@ macro_rules! accessor {
     };
 }
 
+macro_rules! accessor_opt {
+    ($prop:ident, $tp:ty) => {
+        pub fn $prop(&self) -> Option<&$tp> {
+            if let Some(val) = &self.$prop {
+                Some(val)
+            } else {
+                None
+            }
+        }
+    };
+}
+
 macro_rules! accessor_and_mut {
     ($prop:ident, $prop_mut:ident, $tp:ty) => {
         accessor!($prop, $tp);

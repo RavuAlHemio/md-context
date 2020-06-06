@@ -33,28 +33,30 @@ fn output_section(output_file: &mut File, section: &toc::TOCEntry, book_path: &s
         return 1;
     }
 
-    let mut section_path: PathBuf = PathBuf::new();
-    section_path.push(book_path);
-    section_path.push(section.path());
-    let section_frag = match md_ast::load(&section_path) {
-        Ok(ast) => ast,
-        Err(err) => {
-            eprintln!("failed to parse section: {}", err);
-            return 1;
-        },
-    };
+    if let Some(sp) = section.path() {
+        let mut section_path: PathBuf = PathBuf::new();
+        section_path.push(book_path);
+        section_path.push(sp);
+        let section_frag = match md_ast::load(&section_path) {
+            Ok(ast) => ast,
+            Err(err) => {
+                eprintln!("failed to parse section: {}", err);
+                return 1;
+            },
+        };
 
-    let section_tex = match texutil::frag_to_tex(&section_frag) {
-        Ok(tex) => tex,
-        Err(err) => {
-            eprintln!("failed to transform section to TeX: {}", err);
+        let section_tex = match texutil::frag_to_tex(&section_frag) {
+            Ok(tex) => tex,
+            Err(err) => {
+                eprintln!("failed to transform section to TeX: {}", err);
+                return 1;
+            }
+        };
+
+        if let Err(err) = write!(output_file, "{}", section_tex) {
+            eprintln!("failed to output section: {}", err);
             return 1;
         }
-    };
-
-    if let Err(err) = write!(output_file, "{}", section_tex) {
-        eprintln!("failed to output section: {}", err);
-        return 1;
     }
 
     for child_section in section.child_entries() {
