@@ -13,7 +13,11 @@ pub fn escape_tex(text: &str) -> String {
     let mut ret = String::with_capacity(text.len());
     for c in text.chars() {
         match c {
-            '\\' | '~' | '{' | '}' | '#' | '%' => ret.push_str(&format!("\\char`\\{}", c)),
+            '\\' | '~' | '{' | '}' | '#' | '%' | '$' => ret.push_str(&format!("\\char`\\{}", c)),
+            '\u{FFFD}' => {
+                let c_int: u32 = c.into();
+                ret.push_str(&format!("\\char\"{:04X}", c_int));
+            },
             other => ret.push(other),
         }
     }
