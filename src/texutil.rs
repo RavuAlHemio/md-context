@@ -236,6 +236,17 @@ pub fn frag_to_tex(frag: &MarkdownFragment) -> Result<String, String> {
                 let text = educate_tex_quotes(&escape_tex(&text));
                 ret.push_str(&text);
             },
+            MarkdownElement::HtmlFragment(html) => {
+                let mut mod_html = html.replace("\n", "\n% ");
+                mod_html.insert_str(0, "% ");
+                mod_html.push_str("\n");
+                ret.push_str(&mod_html);
+            },
+            MarkdownElement::FootnoteRef(foot_name) => {
+                ret.push_str("\\note[");
+                ret.push_str(&foot_name);
+                ret.push_str("]");
+            },
             _ => {
                 return Err(format!("unknown element type {:?}", elem));
             },

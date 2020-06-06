@@ -65,6 +65,8 @@ pub enum MarkdownElement {
     CodeBlock(MarkdownFragment),
     Formatting(MarkdownFormat, MarkdownFragment),
     Table(MarkdownTable),
+    HtmlFragment(String),
+    FootnoteRef(String),
 }
 
 #[derive(Debug)]
@@ -195,6 +197,12 @@ fn parse_until_end_event<'a>(mut parser: &mut Parser<'a>) -> Result<MarkdownFrag
                 }).collect();
                 let table = parse_table(&mut parser, align_chars)?;
                 elements.push(MarkdownElement::Table(table));
+            },
+            Event::Html(html) => {
+                elements.push(MarkdownElement::HtmlFragment(html.as_ref().to_owned()));
+            },
+            Event::FootnoteReference(fn_name) => {
+                elements.push(MarkdownElement::FootnoteRef(fn_name.as_ref().to_owned()));
             },
             _ => {
                 return Err(ASTError::new(format!("unhandled parser event {:?}", event)));
