@@ -1,5 +1,6 @@
 mod macros;
 mod md_ast;
+mod opts;
 mod texutil;
 mod toc;
 
@@ -9,16 +10,10 @@ use std::io::Write;
 use std::path::PathBuf;
 use std::process::exit;
 
-use getopts;
+use clap::derive::Clap;
 
+use crate::opts::Opts;
 
-fn usage(program_name: &str) {
-    eprintln!("Usage: {} [DIRECTORY [OUTFILE]]", program_name);
-    eprintln!();
-    eprintln!("  DIRECTORY     The directory from which to load the book.");
-    eprintln!("                The default is \"src\".");
-    eprintln!("  OUTFILE       The output TeX file. The default is \"book.tex\".");
-}
 
 fn output_section(output_file: &mut File, section: &toc::TOCEntry, book_path: &str) -> i32 {
     if let Err(err) = write!(
@@ -118,39 +113,23 @@ fn output_tex(output_file: &mut File, toc: &toc::TableOfContents, book_path: &st
 
 fn do_main() -> i32 {
     let args: Vec<String> = env::args().collect();
-    let program_name: String = match args.get(0) {
-        Some(pn) => pn,
-        None => "md-context",
-    }.to_owned();
-
-    let opts = getopts::Options::new();
-    let matches = match opts.parse(&args[1..]) {
-        Ok(m) => m,
+    let opts: Opts = match Opts::try_parse_from(args) {
+        Ok(o) => o,
         Err(err) => {
-            eprintln!("failed to parse arguments: {:?}", err);
-            usage(&program_name);
+            eprint!("{}", err);
             return 1;
         },
     };
 
-    let book_path_str: String = match matches.free.get(0) {
-        Some(bps) => bps,
-        None => "src",
-    }.to_owned();
-
-    let output_path: String = match matches.free.get(1) {
-        Some(op) => op,
-        None => "book.tex",
-    }.to_owned();
-    let mut output_file = match File::create(&output_path) {
+    let mut output_file = match File::create(&opts.out_file) {
         Ok(f) => f,
         Err(err) => {
-            eprintln!("failed to open output file {:?}: {:?}", output_path, err);
+            eprintln!("failed to open output file {:?}: {:?}", opts.out_file, err);
             return 1;
         },
     };
 
-    let toc = match toc::load_toc(&book_path_str) {
+    let toc = match toc::load_toc(&opts.directory) {
         Err(err) => {
             eprintln!("failed to load TOC: {}", err);
             return 1;
@@ -158,7 +137,7 @@ fn do_main() -> i32 {
         Ok(t) => t,
     };
 
-    output_tex(&mut output_file, &toc, &book_path_str)
+    output_tex(&mut output_file, &toc, &opts.directory)
 }
 
 fn main() {
